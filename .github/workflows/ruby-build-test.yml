@@ -3,23 +3,79 @@ name: Install of Ruby 2.0.0 (cached)
 on: push
 
 jobs:
-  build:
-    runs-on: ubuntu-16.04
+  # simple-build:
+  #   if: false
+  #   runs-on: ubuntu-16.04
 
+  #   steps:
+  #   - uses: actions/checkout@v1
+  #   # - uses: actions/cache@preview
+  #   #   id: cache
+  #   #   with:
+  #   #     path: ~/local/rubies
+  #   #     key: ruby-2.0
+  #   - uses: ./.github/actions/build
+  #     id: ruby
+  #     with:
+  #       ruby-version: 2.0.0-p648
+  #       cache-available: ${{ steps.cache.outputs.cache-hit == 'true' }}
+  #   - name: Print version
+  #     run: ${{ steps.ruby.outputs.ruby-path }} --version
+  #   - name: Print OpenSSL version
+  #     run: ${{ steps.ruby.outputs.ruby-path }} -ropenssl -e 'puts OpenSSL::OPENSSL_LIBRARY_VERSION'
+  ruby-build:
+    if: true
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-18.04 ]
+        ruby-version: [ "2.0.0-p648" ]
+        # ruby-version: [ "2.3.0", "2.3.1", "2.3.2", "2.3.3", "2.3.4", "2.3.5", "2.3.6", "2.3.7", "2.3.8" ]
+    runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v1
-    # - uses: actions/cache@preview
-    #   id: cache
-    #   with:
-    #     path: ~/local/rubies
-    #     key: ruby-2.0
-    - uses: ./.github/actions/build
-      id: ruby
-      with:
-        ruby-version: 2.0.0-p648
-        cache-available: ${{ steps.cache.outputs.cache-hit == 'true' }}
-    - name: Print version
-      run: ${{ steps.ruby.outputs.ruby-path }} --version
-    - name: Print OpenSSL version
-      run: ${{ steps.ruby.outputs.ruby-path }} -ropenssl -e 'puts OpenSSL::OPENSSL_LIBRARY_VERSION'
-      
+    - uses: actions/checkout@v2
+    - name: Set tag name
+      id: info
+      run: |
+        tag=enable-shared
+        echo "::set-output name=tag::$tag"
+    - name: Check if already built
+      run: '! curl -s --head --fail https://github.com/mwlang/newrelic-ruby-agent/download/${{ steps.info.outputs.tag }}/ruby-${{ matrix.ruby-version }}-${{ matrix.os }}.tar.gz'
+
+    - name: Clone ruby-build
+      run: git clone --branch ruby23-openssl-linux https://github.com/eregon/ruby-build.git
+    - name: Install ruby-build
+      run: sudo ./ruby-build/install.sh
+
+    - name: List versions
+      run: ruby-build --definitions
+
+      # Install packages
+    - run: sudo apt-get update
+      if: startsWith(matrix.os, 'ubuntu')
+    - run: sudo apt-get install -y --no-install-recommends libyaml-dev libgdbm-dev libreadline-dev libncurses5-dev
+      if: startsWith(matrix.os, 'ubuntu')
+
+    - name: Build Ruby
+      run: ruby-build --verbose ${{ matrix.ruby-version }} $HOME/.rubies/ruby-${{ matrix.ruby-version }}
+      env:
+        RUBY_CONFIGURE_OPTS: --enable-shared --disable-install-doc
+        CPPFLAGS: "-DENABLE_PATH_CHECK=0" # https://github.com/actions/virtual-environments/issues/267
+    - name: Create archive
+      run: tar czf ruby-${{ matrix.ruby-version }}-${{ matrix.os }}.tar.gz -C ~/.rubies ruby-${{ matrix.ruby-version }}
+    - name: Install Bundler if needed
+      run: |
+        if [ ! -e ~/.rubies/ruby-${{ matrix.ruby-version }}/bin/bundle ]; then
+          export PATH="$HOME/.rubies/ruby-${{ matrix.ruby-version }}/bin:$PATH"
+          gem install bundler -v '~> 1' --no-document
+        fi
+
+    - run: echo "::add-path::$HOME/.rubies/ruby-${{ matrix.ruby-version }}/bin"
+    - run: ruby --version
+    - run: ruby -ropen-uri -e 'puts open("https://rubygems.org/") { |f| f.read(1024) }'
+    - run: ${{ steps.ruby.outputs.ruby-path }} -ropenssl -e 'puts OpenSSL::OPENSSL_LIBRARY_VERSION'
+    - run: gem install json:2.2.0 --no-document
+    - run: bundle --version
+    - run: bundle install
+    - run: bundle exec rake --version
+    - run: bundle exec rake test
