@@ -73,7 +73,6 @@ jobs:
     - run: echo "::add-path::$HOME/.rubies/ruby-${{ matrix.ruby-version }}/bin"
     - run: ruby --version
     - run: ruby -ropen-uri -e 'puts open("https://rubygems.org/") { |f| f.read(1024) }'
-    - run: ${{ steps.ruby.outputs.ruby-path }} -ropenssl -e 'puts OpenSSL::OPENSSL_LIBRARY_VERSION'
     - run: gem install json:2.2.0 --no-document
     - run: bundle --version
     - run: bundle install
