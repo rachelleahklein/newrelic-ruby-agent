@@ -58,10 +58,9 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
       - name: show ulimit
         run:  ulimit -S -n 4096 && ulimit -n
-      - name: start mysql
-        run: |
-          sudo /etc/init.d/mysql start
       - name: Bundle
         run: bundle install
       - name: rake test
         run: bundle exec rake test:multiverse[group=${{ matrix.multiverse }},verbose,nocache]
+        env:
+          DB_PORT: ${{ job.services.mysql.ports[3306] }}
