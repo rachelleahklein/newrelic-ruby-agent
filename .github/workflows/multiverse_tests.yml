@@ -36,13 +36,6 @@ jobs:
         ports:
           - 11211:11211
         options: --health-cmd "timeout 5 bash -c 'cat < /dev/null > /dev/udp/127.0.0.1/11211'" --health-interval 10s --health-timeout 5s --health-retries 5
-      mysql:
-        image: mysql:5.7
-        env:
-          MYSQL_ALLOW_EMPTY_PASSWORD: yes
-        ports:
-          - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
     env:
       LANG: C.UTF-8
     strategy:
@@ -60,6 +53,8 @@ jobs:
         run:  ulimit -S -n 4096 && ulimit -n
       - name: Bundle
         run: bundle install
+      - name: Start mysql
+         run: sudo systemctl start mysql
       - name: rake test
         run: bundle exec rake test:multiverse[group=${{ matrix.multiverse }},verbose,nocache]
         env:
