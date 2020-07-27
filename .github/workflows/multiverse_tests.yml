@@ -40,4 +40,4 @@ jobs:
       - name: Bundle
         run: bundle install
       - name: rake test
-        run:  bundle exec rake test:multiverse[${{ matrix.multiverse }}] TESTOPTS="--verbose"
+        run: bundle exec rake test:multiverse[group=${{ matrix.multiverse }},verbose,nocache]
