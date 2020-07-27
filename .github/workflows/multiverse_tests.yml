@@ -1,0 +1,29 @@
+name: Multiverse Test
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the main branch
+on: push
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  multiverse_test:
+    runs-on: ubuntu-latest
+    env:
+      LANG: C.UTF-8
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: [2.7, 2.6, 2.5, 2.4, 2.3, 2.2]
+        multiverse: [agent, api, background, database, httpclients, rails, serialization, sinatra, background_2, rest]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+      - name: show ulimit
+        run:  ulimit -S -n 4096 && ulimit -n
+      - name: Bundle
+        run: bundle install
+      - name: rake test
+        run:  bundle exec rake test:multiverse[${{ matrix.multiverse }}] TESTOPTS="--verbose"
