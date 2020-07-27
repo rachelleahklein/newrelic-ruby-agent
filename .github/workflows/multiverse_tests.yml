@@ -54,7 +54,7 @@ jobs:
       - name: Bundle
         run: bundle install
       - name: Start mysql
-         run: sudo systemctl start mysql
+        run: sudo systemctl start mysql
       - name: rake test
         run: bundle exec rake test:multiverse[group=${{ matrix.multiverse }},verbose,nocache]
         env:
