@@ -51,7 +51,8 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
       - name: show ulimit
         run:  ulimit -S -n 4096 && ulimit -n
-      - run: |
+      - name: start mysql
+        run: |
           sudo /etc/init.d/mysql start
       - name: Bundle
         run: bundle install
