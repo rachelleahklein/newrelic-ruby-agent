@@ -6,8 +6,14 @@ on: push
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+  pre_test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for me!
+        run: sleep 15
   multiverse_test:
-    runs-on: ubuntu-16.04
+    needs: pre_test
+    runs-on: ubuntu-latest
     services:
       # Label used to access the service container
       redis:
