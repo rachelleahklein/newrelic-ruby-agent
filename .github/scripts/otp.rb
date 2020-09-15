@@ -1,3 +1,3 @@
 require 'rotp'
 
-puts ENV["FOO"]
+p "#{ENV["FOO"]}"
